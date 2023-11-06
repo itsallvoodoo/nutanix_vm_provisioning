@@ -1,0 +1,77 @@
+---
+- name: 'Provision VMs in Nutanix from Image'
+  nutanix.ncp.ntnx_vms:
+    boot_config:
+      boot_type: 'LEGACY'
+    categories:
+      DeploymentType:
+        - 'Automated'
+      Environment:
+      OSType:
+        - 'Linux'
+        - "{% if 'test' in vm_env %}Testing{% elif 'development' in vm_env %}Dev{% elif 'production' in vm_env and 'dc-east' in data_center %}Production{% elif 'production' in vm_env and 'dc-west' in data_center %}Disaster_Recovery{% endif %}"
+      OSType:
+        - "{% if 'rhel' in provision_vm_role_image_name %}Linux{% elif 'windows' in provision_vm_role_image_name %}Windows{% endif %}"
+    cluster:
+      name: "{{ ntx_cluster_name }}"
+    cores_per_vcpu: "{{ provision_vm_role_cores_per_vcpu }}"
+    disks:
+      - clone_image:
+          name: "{{ provision_vm_role_image_name }}"
+        type: 'DISK'
+    guest_customization:
+        script_path: "{{ item['init_script'] }}"
+        type: "{% if 'rhel' in provision_vm_role_image_name %}cloud_init{% elif 'windows' in provision_vm_role_image_name  %}sysprep{% endif %}"
+    memory_gb: "{{ provision_vm_role_memory_gb }}"
+    name: "{{ item['hostname'].split('.')[0] }}"
+    networks:
+      - is_connected: true
+        subnet:
+          name: "{{ provision_vm_role_subnet_name }}"
+    nutanix_host: "{{ ntx_host }}"
+    nutanix_password: "{{ ntx_password }}"
+    nutanix_port: "{{ ntx_port }}"
+    nutanix_username: "{{ ntx_user }}"
+    validate_certs: "{{ ntx_validate_certs }}"
+    vcpus: "{{ provision_vm_role_vcpus }}"
+    wait: false
+  loop: "{{ provision_vm_role_provision_vms }}"
+  when: provision_vm_role_image_name is search('rhel')
+
+- name: Provision Windows VM's in Nutanix from Image
+  nutanix.ncp.ntnx_vms:
+    boot_config:
+      boot_type: 'LEGACY'
+    categories:
+      DeploymentType:
+        - 'Automated'
+      Environment:
+        - "{% if 'test' in vm_env | lower %}Testing{% elif 'development' in vm_env | lower %}Dev{% elif 'production' in vm_env | lower%}Production{% endif %}"
+      OSType:
+        - 'Windows'
+    cluster:
+      name: "{{ ntx_cluster_name }}"
+    cores_per_vcpu: "{{ provision_vm_role_cores_per_vcpu }}"
+    disks:
+      - clone_image:
+          name: "{{ provision_vm_role_image_name }}"
+        type: 'DISK'
+    guest_customization:
+        script_path: "{{ item['init_script'] }}"
+        type: 'sysprep'
+    memory_gb: "{{ provision_vm_role_memory_gb }}"
+    name: "{{ item['hostname'].split('.')[0] }}"
+    networks:
+      - is_connected: True
+        subnet:
+          name: "{{ provision_vm_role_subnet_name }}"
+    nutanix_host: "{{ ntx_host }}"
+    nutanix_password: "{{ ntx_password }}"
+    nutanix_port: "{{ ntx_port }}"
+    nutanix_username: "{{ ntx_user }}"
+    validate_certs: "{{ ntx_validate_certs }}"
+    vcpus: "{{ provision_vm_role_vcpus }}"
+    wait: false
+  loop: "{{ provision_vm_role_provision_vms }}"
+  when: provision_vm_role_image_name is search('windows')
+...

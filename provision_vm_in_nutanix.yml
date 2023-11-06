@@ -1,0 +1,23 @@
+---
+- name: 'Create one or more new VMs in Nutanix'
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: 'Include role to provision VMs'
+      ansible.builtin.include_role:
+        name: provision_vm_role
+      vars:
+        ntx_host: "{{ nutanix_host }}"
+        ntx_user: "{{ nutanix_user }}"
+        ntx_password: "{{ nutanix_password }}"
+        ntx_port: "{{ nutanix_port }}"
+        ntx_cluster_name: "{{ nutanix_cluster_name }}"
+        ntx_validate_certs: false
+        provision_vm_role_provision_vms: "{{ vms_and_init_scripts }}"
+        provision_vm_role_image_name: "{{ vm_image_name }}"
+        provision_vm_role_vcpus: "{{ (vm_provision_specs | selectattr('vm_size','match',vm_size) | map(attribute='cpu_count'))[0] }}"
+        provision_vm_role_cores_per_vcpu: "{{ (vm_provision_specs | selectattr('vm_size','match',vm_size) | map(attribute='cpu_core_count'))[0] }}"
+        provision_vm_role_memory_gb: "{{ (vm_provision_specs | selectattr('vm_size','match',vm_size) | map(attribute='ram'))[0] }}"
+        provision_vm_role_subnet_name: "{{ nutanix_subnet_name }}"
+...
